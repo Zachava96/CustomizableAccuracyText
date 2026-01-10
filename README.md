@@ -1,13 +1,11 @@
-# Show Precise Accuracy Text
+# Customizable Accuracy Text
 
-This mod for UNBEATABLE adds the precise timing text (the number next to the "PERFECT") for all hits.
+This mod for UNBEATABLE allows you to change the accuracy text and various options regarding it. It also allows you to add special text for maximum score hits.
 
-![Image showing the timing text "GOOD - 103"](ShowPreciseAccuracyText.png)
+![Image showing the timing text "MAX + 004"](CustomizableAccuracyText.png)
 
 ## Compatible game versions
 - UNBEATABLE (tested with `v1.6.1`)
-- UNBEATABLE Demo (tested with `v1.6.3-dotd`)
-- UNBEATABLE \[white label\] (tested with `v1.0.11-1`)
 
 ## Requirements
 
@@ -17,12 +15,10 @@ This mod for UNBEATABLE adds the precise timing text (the number next to the "PE
 
 1. Download and install BepInEx into your game directory (if you use [CustomBeatmaps](https://github.com/gold-me/CustomBeatmapsV4), you have this installed already)
 2. Run the game, then close it
-3. [Download this mod](https://github.com/Zachava96/ShowPreciseAccuracyText/releases)
+3. [Download this mod](https://github.com/Zachava96/CustomizableAccuracyText/releases)
 4. Merge the BepInEx folder from this mod with the BepInEx folder in your game directory
 5. Run the game
 
 ## Configuration
 
-There's only one option, which is to show values for spike dodges in \[white label\] or the demo. You can change this in the `BepInEx/config/net.zachava.showpreciseaccuracytext.cfg` file by changing `ShowSpikeAccuracy = false` to `ShowSpikeAccuracy = true`
-
-The comment in that file explains when the value will be shown.
+The default configuration makes no visible changes to the game. Please see the `BepInEx/config/net.zachava.customizableaccuracytext.cfg` file for details on configuration.
