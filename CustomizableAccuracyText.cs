@@ -120,23 +120,18 @@ namespace CustomizableAccuracyText
 
             Logger.LogInfo($"Plugin {PLUGIN_GUID} is loaded!");
             var harmony = new Harmony(PLUGIN_GUID);
-            harmony.PatchAll(typeof(AttackInfoPatches));
             harmony.PatchAll(typeof(BackgroundAccuracyDisplayboardPatches));
         }
     }
 
-    // Prefix-and-skip is overkill, but I am lazy
-    [HarmonyPatch(typeof(AttackInfo))]
-    [HarmonyPatch("GetTierText")]
+    // This is called by the actual patched method in BackgroundAccuracyDisplayboard
     class AttackInfoPatches
     {
-        static bool Prefix(AttackInfo __instance, Score score, ref string __result)
+        public static string GetTierText(AttackInfo __instance, Score score)
         {
             if (FileStorage.beatmapOptions.judgmentDisplayStyle == StorableBeatmapOptions.JudgmentDisplayStyle.None)
             {
-                // If judgment display style is "None", don't show any text
-                __result = "";
-                return false;
+                return "";
             }
             string[] normalTierText = CustomizableAccuracyText.NormalTierText;
             string spikeTierText = CustomizableAccuracyText.SpikeTierText.Value;
@@ -167,8 +162,7 @@ namespace CustomizableAccuracyText
                 {
                     accuracyText = " " + preciseAccuracyText;
                 }
-                __result = tierText + accuracyText;
-                return false;
+                return tierText + accuracyText;
             }
 
             // non-dodge notes
@@ -179,14 +173,15 @@ namespace CustomizableAccuracyText
                 {
                     accuracyText = " " + preciseAccuracyText;
                 }
-                __result = tierText + accuracyText;
-                return false;
+                return tierText + accuracyText;
             }
             if (CustomizableAccuracyText.LogNonMaxScores.Value && Mathf.Abs(preciseAccuracy) > CustomizableAccuracyText.MaxScoreThreshold.Value)
             {
                 CustomizableAccuracyText.Logger.LogInfo(
                     $"Non-max score detected: {preciseAccuracy}ms " +
-                    $"({__instance.info.type} note at {__instance.info.time / 1000f:F3}s)"
+                    $"({__instance.info.type} note " +
+                    $"at {__instance.info.height} height " +
+                    $"at {__instance.info.time / 1000f:F3}s)"
                 );
 
             }
@@ -196,8 +191,7 @@ namespace CustomizableAccuracyText
             {
                 accuracyText = " " + preciseAccuracyText;
             }
-            __result = tierText + accuracyText;
-            return false;
+            return tierText + accuracyText;
         }
     }
 
@@ -210,7 +204,7 @@ namespace CustomizableAccuracyText
         {
             if (__instance.controller.inBrawl)
             {
-                __instance.topScore = attack.GetTierText(score);
+                __instance.topScore = AttackInfoPatches.GetTierText(attack, score);
                 return;
             }
             Height height = attack.lane.height;
@@ -218,18 +212,18 @@ namespace CustomizableAccuracyText
 			{
 				if (height != Height.Top)
                 {
-                    __instance.midScore = attack.GetTierText(score);
+                    __instance.midScore = AttackInfoPatches.GetTierText(attack, score);
                     return;
                 }
                 else
                 {
-                    __instance.topScore = attack.GetTierText(score);
+                    __instance.topScore = AttackInfoPatches.GetTierText(attack, score);
                     return;
                 }
             }
             else
             {
-                __instance.lowScore = attack.GetTierText(score);
+                __instance.lowScore = AttackInfoPatches.GetTierText(attack, score);
                 return;
             }
         }
