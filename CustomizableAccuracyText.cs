@@ -91,7 +91,7 @@ namespace CustomizableAccuracyText
                 "Max Score",
                 "EnableMaxScoreDetection",
                 false,
-                "Whether to have a special tier for max score. Only displays in-game."
+                "Whether to have a special tier for max score. Only displays during play."
             );
             MaxScoreThreshold = Config.Bind(
                 "Max Score",
