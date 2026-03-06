@@ -2,10 +2,12 @@
 
 This mod for UNBEATABLE allows you to change the accuracy text and various options regarding it. It also allows you to add special text for maximum score hits.
 
+Please note that this mod is unofficial and not endorsed by D-CELL GAMES in any way.
+
 ![Image showing the timing text "MAX + 004"](CustomizableAccuracyText.png)
 
 ## Compatible game versions
-- UNBEATABLE (tested with `v1.6.1`)
+- UNBEATABLE (tested with `v1.7.3`)
 
 ## Requirements
 
