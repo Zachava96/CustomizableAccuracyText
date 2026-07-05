@@ -7,7 +7,7 @@ Please note that this mod is unofficial and not endorsed by D-CELL GAMES in any 
 ![Image showing the timing text "MAX + 004"](CustomizableAccuracyText.png)
 
 ## Compatible game versions
-- UNBEATABLE (tested with `v1.7.3`)
+- UNBEATABLE (tested with `v2.0.3`)
 
 ## Requirements
 
