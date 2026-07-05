@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Diagnostics;
 using BepInEx;
 using BepInEx.Logging;
 using BepInEx.Configuration;
 using HarmonyLib;
 using Rhythm;
-using System.Runtime.CompilerServices;
+using TMPro;
 using UnityEngine;
 
 namespace CustomizableAccuracyText
@@ -162,6 +161,13 @@ namespace CustomizableAccuracyText
                 {
                     accuracyText = " " + preciseAccuracyText;
                 }
+
+                if (string.IsNullOrEmpty(tierText) && string.IsNullOrEmpty(accuracyText))
+                {
+                    // Hidden tier. Caller skips display so lingering judgements are not overridden.
+                    return "";
+                }
+
                 return tierText + accuracyText;
             }
 
@@ -191,41 +197,145 @@ namespace CustomizableAccuracyText
             {
                 accuracyText = " " + preciseAccuracyText;
             }
+
+            if (string.IsNullOrEmpty(tierText) && string.IsNullOrEmpty(accuracyText))
+            {
+                // Empty tier label with timing disabled. Treat as fully hidden for this judgement.
+                return "";
+            }
+
             return tierText + accuracyText;
         }
     }
 
-    // The game doesn't actually use the strings until later, so postfixing should be good enough (avoids transpiling)
+    // Vanilla Display always resets timer, alpha, gradient, alignment, and rotation even when tier text is empty. 
+    // We snapshot first, then undo those changes when a judgement is configured to show nothing.
     [HarmonyPatch(typeof(BackgroundAccuracyDisplayboard))]
     [HarmonyPatch("Display")]
     class BackgroundAccuracyDisplayboardPatches
     {
-        static void Postfix(BackgroundAccuracyDisplayboard __instance, AttackInfo attack, Score score)
+        // Lane visual state that vanilla Display mutates every call.
+        private struct DisplayVisualSnapshot
         {
-            if (__instance.controller.inBrawl)
+            internal string Score;
+            internal float Timer;
+            internal float Alpha;
+            internal TextAlignmentOptions Alignment;
+            internal VertexGradient ColorGradient;
+            internal Side Side;
+            internal Quaternion BoardRotation; // shared parent transform, not per-lane
+        }
+
+        private static DisplayVisualSnapshot CaptureDisplayState(BackgroundAccuracyDisplayboard board, AttackInfo attack)
+        {
+            TextMeshProUGUI laneText;
+            string score;
+            float timer;
+            Side side;
+
+            if (board.controller.inBrawl || attack.lane.height == Height.Top)
             {
-                __instance.topScore = AttackInfoPatches.GetTierText(attack, score);
-                return;
+                laneText = board.top;
+                score = board.topScore;
+                timer = board.topTimer;
+                side = board.topSide;
             }
-            Height height = attack.lane.height;
-			if (height != Height.Low)
-			{
-				if (height != Height.Top)
-                {
-                    __instance.midScore = AttackInfoPatches.GetTierText(attack, score);
-                    return;
-                }
-                else
-                {
-                    __instance.topScore = AttackInfoPatches.GetTierText(attack, score);
-                    return;
-                }
+            else if (attack.lane.height == Height.Low)
+            {
+                laneText = board.low;
+                score = board.lowScore;
+                timer = board.lowTimer;
+                side = board.lowSide;
             }
             else
             {
-                __instance.lowScore = AttackInfoPatches.GetTierText(attack, score);
+                laneText = board.mid;
+                score = board.midScore;
+                timer = board.midTimer;
+                side = board.midSide;
+            }
+
+            return new DisplayVisualSnapshot
+            {
+                Score = score,
+                Timer = timer,
+                Alpha = laneText.alpha,
+                Alignment = laneText.alignment,
+                ColorGradient = laneText.colorGradient,
+                Side = side,
+                BoardRotation = board.transform.localRotation
+            };
+        }
+
+        private static void RestoreDisplayState(BackgroundAccuracyDisplayboard board, AttackInfo attack, DisplayVisualSnapshot snapshot)
+        {
+            TextMeshProUGUI laneText;
+
+            if (board.controller.inBrawl || attack.lane.height == Height.Top)
+            {
+                laneText = board.top;
+                board.topScore = snapshot.Score;
+                board.topTimer = snapshot.Timer;
+                board.topSide = snapshot.Side;
+            }
+            else if (attack.lane.height == Height.Low)
+            {
+                laneText = board.low;
+                board.lowScore = snapshot.Score;
+                board.lowTimer = snapshot.Timer;
+                board.lowSide = snapshot.Side;
+            }
+            else
+            {
+                laneText = board.mid;
+                board.midScore = snapshot.Score;
+                board.midTimer = snapshot.Timer;
+                board.midSide = snapshot.Side;
+            }
+
+            laneText.alpha = snapshot.Alpha;
+            laneText.alignment = snapshot.Alignment;
+            laneText.colorGradient = snapshot.ColorGradient;
+            board.transform.localRotation = snapshot.BoardRotation;
+        }
+
+        private static void ApplyTierText(BackgroundAccuracyDisplayboard board, AttackInfo attack, string tierText)
+        {
+            if (board.controller.inBrawl || attack.lane.height == Height.Top)
+            {
+                board.topScore = tierText;
+            }
+            else if (attack.lane.height == Height.Low)
+            {
+                board.lowScore = tierText;
+            }
+            else
+            {
+                board.midScore = tierText;
+            }
+        }
+
+        static void Prefix(BackgroundAccuracyDisplayboard __instance, AttackInfo attack, out DisplayVisualSnapshot __state)
+        {
+            __state = CaptureDisplayState(__instance, attack);
+        }
+
+        static void Postfix(
+            BackgroundAccuracyDisplayboard __instance,
+            AttackInfo attack,
+            Score score,
+            DisplayVisualSnapshot __state)
+        {
+            string tierText = AttackInfoPatches.GetTierText(attack, score);
+            if (string.IsNullOrEmpty(tierText))
+            {
+                // Stats were still counted by vanilla Display; only revert the visual side effects.
+                RestoreDisplayState(__instance, attack, __state);
                 return;
             }
+
+            // Vanilla already applied timer, alpha, rotation, etc. Override the string only.
+            ApplyTierText(__instance, attack, tierText);
         }
     }
 }
