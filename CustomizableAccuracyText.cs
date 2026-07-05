@@ -16,7 +16,7 @@ namespace CustomizableAccuracyText
     {
         public const string PLUGIN_GUID = "net.zachava.customizableaccuracytext";
         public const string PLUGIN_NAME = "Customizable Accuracy Text";
-        public const string PLUGIN_VERSION = "1.0.0";
+        public const string PLUGIN_VERSION = "1.1.1";
         internal static new ManualLogSource Logger;
         public static ConfigEntry<string> NormalTierTextString;
         public static string[] NormalTierText
